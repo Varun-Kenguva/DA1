@@ -1,0 +1,430 @@
+ml
+# ============================================================
+# Q1. STUDENT ACADEMIC PERFORMANCE
+# ============================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("student_academic_performance_case_study (1).csv")
+
+# 1. Analyze
+print(df.head())
+print(df.info())
+print(df.describe())
+
+# 2. Clean
+print(df.isnull().sum())
+df = df.drop_duplicates()
+
+num_cols = df.select_dtypes(include="number").columns
+df[num_cols] = df[num_cols].fillna(df[num_cols].median())
+
+# 3. Feature Engineering
+df["Attendance_Binary"] = (df["Attendance_%"] >= 75).astype(int)
+df["Previous_Semester_GPA"] = df["Previous_Semester_GPA"].round(1)
+
+# 4. Visualization
+plt.hist(df["Final_Exam_Marks"], bins=8, edgecolor="black")
+plt.xlabel("Final Exam Marks")
+plt.ylabel("Number of Students")
+plt.title("Final Exam Marks")
+plt.show()
+
+
+# ============================================================
+# Q2. E-COMMERCE CUSTOMER PURCHASE
+# ============================================================
+
+df = pd.read_csv("ecommerce_customer_purchase_case_study.csv")
+
+# 1. Analyze
+print(df.head())
+print(df.info())
+print(df.describe())
+
+# 2. Clean
+print(df.isnull().sum())
+df = df.drop_duplicates()
+
+num_cols = df.select_dtypes(include="number").columns
+df[num_cols] = df[num_cols].fillna(df[num_cols].median())
+
+# 3. Feature Engineering
+payment_map = {
+    "Cash": 0,
+    "Card": 1,
+    "UPI": 2
+}
+
+df["Payment_Method"] = (
+    df["Payment_Method"]
+    .str.strip()
+    .str.title()
+    .map(payment_map)
+)
+
+df["Log_Purchase_Amount"] = np.log1p(
+    df["Purchase_Amount"].clip(lower=0)
+)
+
+# 4. Visualization
+df.groupby("Product_Category")["Purchase_Amount"].sum().plot(
+    kind="bar",
+    edgecolor="black"
+)
+
+plt.xlabel("Product Category")
+plt.ylabel("Total Purchase Amount")
+plt.title("Purchase Amount by Category")
+plt.show()
+
+
+# ============================================================
+# Q3. ROAD ACCIDENT DATASET
+# ============================================================
+
+df = pd.read_json("road_accident_case_study.json")
+
+# 1. Analyze
+print(df.head())
+print(df.info())
+print(df.describe())
+
+# 2. Clean
+print(df.isnull().sum())
+
+df["Weather"] = df["Weather"].fillna(
+    df["Weather"].mode()[0]
+)
+
+df = df.drop_duplicates()
+
+# 3. Feature Engineering
+
+# Convert Date to datetime
+df["Date"] = pd.to_datetime(df["Date"])
+
+# Weekend feature
+df["Weekend"] = df["Date"].dt.dayofweek >= 5
+
+# Convert Time to hour
+df["Hour"] = pd.to_datetime(
+    df["Time"],
+    format="%H:%M"
+).dt.hour
+
+# Time of Day
+def time_of_day(hour):
+    if hour < 6:
+        return "Night"
+    elif hour < 12:
+        return "Morning"
+    elif hour < 18:
+        return "Afternoon"
+    else:
+        return "Evening"
+
+df["Time_of_Day"] = df["Hour"].apply(time_of_day)
+
+print(df.head())
+
+# 4. Visualization
+df["Hour"].value_counts().sort_index().plot(
+    kind="line",
+    marker="o"
+)
+
+plt.xlabel("Hour")
+plt.ylabel("Number of Accidents")
+plt.title("Accidents by Hour")
+plt.grid()
+plt.show()
+
+
+# ============================================================
+# Q4. IMAGE DATASET
+# ============================================================
+
+import cv2
+
+# Load image
+img = cv2.imread("road_image.jpg")
+
+# Convert to RGB
+img_rgb = cv2.cvtColor(
+    img,
+    cv2.COLOR_BGR2RGB
+)
+
+# Convert to grayscale
+gray = cv2.cvtColor(
+    img,
+    cv2.COLOR_BGR2GRAY
+)
+
+# Blurring
+blur = cv2.GaussianBlur(
+    gray,
+    (5, 5),
+    0
+)
+
+# Sharpening
+kernel = np.array([
+    [0, -1, 0],
+    [-1, 5, -1],
+    [0, -1, 0]
+])
+
+sharp = cv2.filter2D(
+    gray,
+    -1,
+    kernel
+)
+
+# Feature extraction using ORB
+orb = cv2.ORB_create()
+
+keypoints, descriptors = orb.detectAndCompute(
+    gray,
+    None
+)
+
+# Draw keypoints
+output = cv2.drawKeypoints(
+    img_rgb,
+    keypoints,
+    None,
+    color=(0, 255, 0)
+)
+
+print("Number of key points:", len(keypoints))
+
+# Visualization
+plt.figure(figsize=(10, 6))
+plt.imshow(output)
+plt.title("ORB Key Points")
+plt.axis("off")
+plt.show()
+
+
+# ============================================================
+# Q5. STUDENT PERFORMANCE - LINEAR ALGEBRA
+# ============================================================
+
+df = pd.read_csv(
+    "student_performance_linear_algebra.csv"
+)
+
+# 1. Analyze
+print(df.head())
+print(df.info())
+print(df.describe())
+
+# 2. Clean
+print(df.isnull().sum())
+
+df = df.drop_duplicates()
+
+num_cols = df.select_dtypes(include="number").columns
+df[num_cols] = df[num_cols].fillna(
+    df[num_cols].median()
+)
+
+# 3. Feature Engineering
+
+subjects = [
+    "Mathematics",
+    "Physics",
+    "Computer_Science",
+    "English"
+]
+
+# Total marks
+df["Total_Marks"] = df[subjects].sum(axis=1)
+
+# Performance level
+def performance_level(marks):
+    if marks <= 50:
+        return "Poor"
+    elif marks <= 70:
+        return "Average"
+    elif marks <= 80:
+        return "Good"
+    else:
+        return "Excellent"
+
+df["Performance_Level"] = df[
+    "Total_Marks"
+].apply(performance_level)
+
+print(
+    df[
+        ["Student_ID", "Total_Marks",
+         "Performance_Level"]
+    ].head()
+)
+
+# 4. Linear Algebra
+
+# Convert marks to NumPy matrix
+X = df[subjects].values
+
+# Covariance matrix
+cov_matrix = np.cov(
+    X,
+    rowvar=False
+)
+
+print("Covariance Matrix:")
+print(cov_matrix)
+
+# Eigenvalues and eigenvectors
+eigenvalues, eigenvectors = np.linalg.eig(
+    cov_matrix
+)
+
+print("Eigenvalues:")
+print(eigenvalues)
+
+print("Eigenvectors:")
+print(eigenvectors)
+
+# Major direction
+largest = np.argmax(eigenvalues)
+
+print(
+    "Major direction:",
+    eigenvectors[:, largest]
+)
+
+# Visualization
+plt.bar(subjects, eigenvalues)
+plt.xlabel("Subjects")
+plt.ylabel("Eigenvalue")
+plt.title("Eigenvalues of Student Performance")
+plt.show()
+
+
+# ============================================================
+# Q6. EMPLOYEE SALARY - LINEAR ALGEBRA
+# ============================================================
+
+df = pd.read_json(
+    "employee_salary_linear_algebra.json"
+)
+
+# 1. Analyze
+print(df.head())
+print(df.info())
+print(df.describe())
+
+# 2. Clean
+print(df.isnull().sum())
+
+df = df.drop_duplicates()
+
+num_cols = df.select_dtypes(include="number").columns
+df[num_cols] = df[num_cols].fillna(
+    df[num_cols].median()
+)
+
+df["Department"] = df["Department"].fillna(
+    df["Department"].mode()[0]
+)
+
+# 3. Feature Engineering
+
+# Annual salary
+df["Annual_Salary"] = (
+    df["Monthly_Salary"] * 12
+)
+
+# Experience level
+def experience_level(years):
+    if years <= 2:
+        return "Beginner"
+    elif years <= 5:
+        return "Intermediate"
+    else:
+        return "Experienced"
+
+df["Experience_Level"] = df[
+    "Experience_Years"
+].apply(experience_level)
+
+print(df.head())
+
+# 4. Linear Algebra
+
+features = [
+    "Age",
+    "Experience_Years",
+    "Monthly_Salary",
+    "Performance_Score",
+    "Working_Hours"
+]
+
+X = df[features].values
+
+# Matrix rank
+rank = np.linalg.matrix_rank(X)
+
+print("Matrix Rank:", rank)
+
+# Covariance matrix
+cov_matrix = np.cov(
+    X,
+    rowvar=False
+)
+
+print("Covariance Matrix:")
+print(cov_matrix)
+
+# Eigenvalues and eigenvectors
+eigenvalues, eigenvectors = np.linalg.eig(
+    cov_matrix
+)
+
+print("Eigenvalues:")
+print(eigenvalues)
+
+print("Eigenvectors:")
+print(eigenvectors)
+
+# Major direction
+largest = np.argmax(eigenvalues)
+
+print(
+    "Largest Eigenvalue:",
+    eigenvalues[largest]
+)
+
+print(
+    "Major Direction:",
+    eigenvectors[:, largest]
+)
+
+# Visualization
+plt.imshow(
+    cov_matrix,
+    cmap="viridis"
+)
+
+plt.colorbar()
+
+plt.xticks(
+    range(len(features)),
+    features,
+    rotation=45
+)
+
+plt.yticks(
+    range(len(features)),
+    features
+)
+
+plt.title("Covariance Matrix")
+plt.show()
