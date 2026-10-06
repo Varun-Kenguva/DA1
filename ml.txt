@@ -209,6 +209,30 @@ plt.title("ORB Key Points")
 plt.axis("off")
 plt.show()
 
+plt.figure(figsize=(12,8))
+
+plt.subplot(2,3,1)
+plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+plt.title("Original")
+
+plt.subplot(2,3,2)
+plt.imshow(gray, cmap="gray")
+plt.title("Gray")
+
+plt.subplot(2,3,3)
+plt.imshow(blur, cmap="gray")
+plt.title("Blur")
+
+plt.subplot(2,3,4)
+plt.imshow(sharp, cmap="gray")
+plt.title("Sharp")
+
+plt.subplot(2,3,5)
+plt.imshow(cv2.cvtColor(key, cv2.COLOR_BGR2RGB))
+plt.title("Key Points")
+
+plt.show()
+
 
 # ============================================================
 # Q5. STUDENT PERFORMANCE - LINEAR ALGEBRA
