@@ -1,0 +1,186 @@
+# ================================
+# BDA LAB - GOOGLE COLAB SETUP
+# ================================
+
+# ---------- 1. INSTALL JAVA ----------
+!apt-get update -qq
+!apt-get install -y openjdk-11-jdk-headless -qq
+
+# ---------- 2. INSTALL HADOOP ----------
+!wget -q https://archive.apache.org/dist/hadoop/common/hadoop-3.3.6/hadoop-3.3.6.tar.gz
+!tar -xzf hadoop-3.3.6.tar.gz
+!mv hadoop-3.3.6 /content/hadoop
+
+# Set Hadoop environment variables
+import os
+
+os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-11-openjdk-amd64"
+os.environ["HADOOP_HOME"] = "/content/hadoop"
+os.environ["PATH"] += ":/content/hadoop/bin:/content/hadoop/sbin"
+
+# Check Hadoop
+!java -version
+!hadoop version
+
+
+# ==========================================
+# 1. HADOOP STANDALONE MODE - WORD COUNT
+# ==========================================
+
+!rm -rf /content/input /content/output
+!mkdir -p /content/input
+
+!echo "Hello Hadoop" > /content/input/test.txt
+
+!hadoop jar /content/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.6.jar wordcount /content/input /content/output
+
+!cat /content/output/part-r-00000
+
+
+# ==========================================
+# 2. HADOOP WORD COUNT ARCHITECTURE
+# ==========================================
+
+print("""
+HADOOP
+ |
+ |-- HDFS       -> Storage
+ |
+ |-- YARN       -> Resource Management
+ |
+ |-- MapReduce  -> Data Processing
+
+Word Count:
+Input -> Mapper -> Shuffle -> Reducer -> Output
+""")
+
+
+# ==========================================
+# 3. HDFS FILE AND DIRECTORY OPERATIONS
+# ==========================================
+#
+# Start HDFS services for HDFS commands
+#
+
+# Configure Hadoop for HDFS
+!mkdir -p /content/hadoop_data/name
+!mkdir -p /content/hadoop_data/data
+
+!cat > /content/hadoop/etc/hadoop/core-site.xml <<'EOF'
+<configuration>
+<property>
+<name>fs.defaultFS</name>
+<value>hdfs://localhost:9000</value>
+</property>
+</configuration>
+EOF
+
+!cat > /content/hadoop/etc/hadoop/hdfs-site.xml <<'EOF'
+<configuration>
+<property>
+<name>dfs.replication</name>
+<value>1</value>
+</property>
+<property>
+<name>dfs.namenode.name.dir</name>
+<value>file:///content/hadoop_data/name</value>
+</property>
+<property>
+<name>dfs.datanode.data.dir</name>
+<value>file:///content/hadoop_data/data</value>
+</property>
+</configuration>
+EOF
+
+# Format NameNode
+!yes Y | /content/hadoop/bin/hdfs namenode -format -force
+
+# Start HDFS
+!start-dfs.sh
+
+# Create HDFS directories
+!hdfs dfs -mkdir -p /bda/input
+
+# Create local file
+!echo "Big Data Analytics" > /content/data.txt
+
+# Upload file
+!hdfs dfs -put -f /content/data.txt /bda/input
+
+# View files
+!hdfs dfs -ls /bda/input
+
+# Read file
+!hdfs dfs -cat /bda/input/data.txt
+
+# Retrieve file
+!hdfs dfs -get -f /bda/input/data.txt /content/retrieved.txt
+
+# Display retrieved file
+!cat /content/retrieved.txt
+
+# Delete file
+!hdfs dfs -rm /bda/input/data.txt
+
+# Delete directory
+!hdfs dfs -rm -r /bda
+
+
+# ==========================================
+# 4. INSTALL AND RUN APACHE SPARK
+# ==========================================
+
+!pip install -q pyspark
+
+# Check Spark
+!spark-submit --version
+
+
+# Start Spark / create RDD
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder \
+    .appName("BDA_Lab") \
+    .master("local[*]") \
+    .getOrCreate()
+
+data = [1, 2, 3, 4, 5]
+
+rdd = spark.sparkContext.parallelize(data)
+
+print("RDD Data:")
+print(rdd.collect())
+
+print("RDD Sum:")
+print(rdd.sum())
+
+
+# ==========================================
+# 5. PYSPARK DATAFRAME
+# ==========================================
+
+# Create sample textbook data
+data = [
+    (1, "Rahul", 85),
+    (2, "Priya", 90),
+    (3, "Amit", 78)
+]
+
+columns = ["ID", "Name", "Marks"]
+
+# Create DataFrame
+df = spark.createDataFrame(data, columns)
+
+# Display Data
+print("DataFrame:")
+df.show()
+
+# Display Schema
+print("Schema:")
+df.printSchema()
+
+# Number of rows
+print("Number of rows:", df.count())
+
+# Stop Spark
+spark.stop()
